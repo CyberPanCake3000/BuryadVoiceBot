@@ -10,7 +10,7 @@ class SentencesRepository:
         self.col = db.suggested_sentences
 
     async def add(self, text: str, author: int) -> None:
-        await self.col.insert_one({
+        result = await self.col.insert_one({
             "text": text,
             "author": author,
             "status": SentenceStatus.PENDING,
@@ -19,6 +19,7 @@ class SentencesRepository:
             "approved_at": None,
             "created_at": datetime.utcnow(),
         })
+        return result.inserted_id
 
     async def random_approved(self, limit: int = 5) -> list[dict]:
         cursor = self.col.aggregate([

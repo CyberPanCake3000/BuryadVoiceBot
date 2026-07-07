@@ -1,18 +1,22 @@
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
+from bson import ObjectId
 
 from database.mongo import Mongo
 from database.repositories.sentences import SentencesRepository
+from database.repositories.voices import VoicesRepository
+from keyboards.suggest import suggest_voice_kb
 
 router = Router(name="suggest")
 
 
 class SuggestState(StatesGroup):
     WAIT_SENTENCE = State()
-
+    WAIT_DECISION = State()
+    WAIT_VOICE = State()
 
 @router.message(Command("suggest"))
 async def cmd_suggest(message: Message, state: FSMContext) -> None:
@@ -20,13 +24,61 @@ async def cmd_suggest(message: Message, state: FSMContext) -> None:
     await message.answer(
         "Введите предложение на бурятском.\n"
         "Оно попадёт на модерацию.\n"
-        "После одобрения его смогут озвучить другие пользователи."
+        "После одобрения это предложение смогут озвучить другие пользователи."
     )
 
 
 @router.message(StateFilter(SuggestState.WAIT_SENTENCE))
 async def on_sentence(message: Message, state: FSMContext, mongo: Mongo) -> None:
     repo = SentencesRepository(mongo.db)
-    await repo.add(text=message.text, author=message.from_user.id)
+    sentence_id = await repo.add(text=message.text, author=message.from_user.id)
+
+    await state.update_data(sentence_id=str(sentence_id), text=message.text)
+    await state.set_state(SuggestState.WAIT_DECISION)
+
+    await message.answer(
+        "Спасибо! Предложение отправлено на модерацию.\n\n"
+        "Желаете озвучить своё предложение?",
+        reply_markup=suggest_voice_kb(),
+    )
+
+
+@router.callback_query(F.data == "sv:no")
+async def on_decline(callback: CallbackQuery, state: FSMContext) -> None:
     await state.clear()
-    await message.answer("Спасибо! Предложение отправлено на модерацию.")
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.message.answer("Хорошо! Спасибо за ваш вклад 🙏")
+    await callback.answer()
+
+
+@router.callback_query(F.data == "sv:yes")
+async def on_accept(callback: CallbackQuery, state: FSMContext) -> None:
+    data = await state.get_data()
+    await state.set_state(SuggestState.WAIT_VOICE)
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.message.answer(
+        f"Вот предложение:\n\n<b>{data['text']}</b>\n\n"
+        "Озвучьте, пожалуйста — пришлите голосовое сообщение."
+    )
+    await callback.answer()
+
+
+@router.message(StateFilter(SuggestState.WAIT_VOICE), F.voice)
+async def on_suggest_voice(message: Message, state: FSMContext, mongo: Mongo) -> None:
+    data = await state.get_data()
+    voice = message.voice
+    voices = VoicesRepository(mongo.db)
+    await voices.add(
+        sentence_id=ObjectId(data["sentence_id"]),
+        telegram_id=message.from_user.id,
+        file_id=voice.file_id,
+        unique_id=voice.file_unique_id,
+        duration=voice.duration,
+    )
+    await state.clear()
+    await message.answer("Спасибо! Каждый голос важен 🙏")
+
+
+@router.message(StateFilter(SuggestState.WAIT_VOICE))
+async def suggest_not_voice(message: Message) -> None:
+    await message.answer("Пожалуйста, пришлите именно голосовое сообщение 🎤")
