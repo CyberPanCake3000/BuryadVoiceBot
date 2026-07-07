@@ -6,6 +6,8 @@ from database.mongo import Mongo
 from database.repositories.users import UsersRepository
 from keyboards.agreement import agreement_kb
 from keyboards.menu import main_menu_kb
+from services.roles import get_role
+from database.repositories.reviewers import ReviewersRepository
 
 router = Router(name="start")
 
@@ -20,17 +22,43 @@ WELCOME = (
     "с политикой обработки данных. Прочитать подробнее политику можно используя команду /policy"
 )
 
+ADMIN_WELCOME = (
+    "Вы вошли как <b>администратор</b>.\n\n"
+    "Доступные действия:\n"
+    "/addreviewer — добавить ревьюера (отправьте контакт)\n"
+    "/suggest — предложить предложение\n"
+    "/voice — озвучить предложения"
+)
+
+REVIEWER_WELCOME = (
+    "Вы — <b>ревьюер</b>.\n\n"
+    "Вы помогаете модерировать предложения других участников.\n"
+    "/startreview — получить предложения на проверку\n"
+    "/suggest — предложить своё\n"
+    "/voice — озвучить предложения"
+)
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, mongo: Mongo) -> None:
     users = UsersRepository(mongo.db)
     await users.upsert(message.from_user.id, message.from_user.username)
-
+    role = await get_role(message.from_user.id, mongo)
+    if role == "reviewer":
+        reviewers = ReviewersRepository(mongo.db)
+        await reviewers.set_username(message.from_user.id, message.from_user.username)
+    
+    if not await users.is_agreed(message.from_user.id):
+        await message.answer(WELCOME, reply_markup=agreement_kb())
+        return
+    
+    if role == "admin":
+        await message.answer(ADMIN_WELCOME, reply_markup=main_menu_kb("admin"))
+        return
+    if role == "reviewer":
+        await message.answer(REVIEWER_WELCOME, reply_markup=main_menu_kb("reviewer"))
+        return
     if await users.is_agreed(message.from_user.id):
-        await message.answer(
-            "С возвращением! Вам доступны все команды.",
-            reply_markup=main_menu_kb(),
-        )
+        await message.answer("С возвращением!", reply_markup=main_menu_kb("user"))
     else:
         await message.answer(WELCOME, reply_markup=agreement_kb())
 
@@ -39,8 +67,13 @@ async def cmd_start(message: Message, mongo: Mongo) -> None:
 async def on_agree(callback: CallbackQuery, mongo: Mongo) -> None:
     users = UsersRepository(mongo.db)
     await users.set_agreed(callback.from_user.id)
-    await callback.message.answer(
-        "Спасибо! Теперь Вам доступны все команды.",
-        reply_markup=main_menu_kb(),
-    )
+
+    role = await get_role(callback.from_user.id, mongo)
+    welcome = {
+        "admin": ADMIN_WELCOME,
+        "reviewer": REVIEWER_WELCOME,
+    }.get(role, "Спасибо! Теперь Вам доступны все команды.")
+
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.message.answer(welcome, reply_markup=main_menu_kb(role))
     await callback.answer()

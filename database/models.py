@@ -36,3 +36,10 @@ class VoiceRecord(BaseModel):
     duration: int | None = None
     status: SentenceStatus = SentenceStatus.PENDING
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Reviewer(BaseModel):
+    telegram_id: int
+    username: str | None = None
+    full_name: str | None = None
+    added_by: int
+    created_at: datetime = Field(default_factory=datetime.utcnow)
