@@ -12,6 +12,9 @@
 - **Согласие с политикой** — обязательное принятие перед использованием (middleware)
 - **Хранение в MongoDB** — отдельные коллекции под каждую сущность
 - **Роли** — обычный пользователь, ревьюер и администратор с разными меню и командами
+- **Коллективная модерация** — ревьюеры голосуют за предложения; фраза одобряется, когда за неё больше половины ревьюеров
+- **Жалобы и бан** — ревьюер может пожаловаться на фразу; после 3 жалоб её автор исключается из проекта и попадает в чёрный список
+- **Памятки-онбординг** — при первом использовании `/suggest` и `/voice` бот показывает правила (один раз)
 
 ## Стек
 
@@ -46,11 +49,12 @@
         ↓
 Ревьюер: /startreview → получает 5 случайных фраз, которые ещё не смотрел
         ↓
-жмёт [✅ Принять] / [❌ Отклонить]
+жмёт [✅ Принять] / [❌ Отклонить] / [🚫 Пожаловаться]
         ↓
 голос пишется в reviews[] самой фразы (повторно проголосовать нельзя)
         ↓
-когда approve набирает больше половины от всех ревьюеров → статус approved
+• approve набирает больше половины от всех ревьюеров → статус approved
+• complain → автору начисляется жалоба; после 3 жалоб автор банится и блокируется навсегда
         ↓
 фраза автоматически попадает в /voice на озвучку
 ```
@@ -87,7 +91,8 @@ BuryadVoiceBot/
 ├── keyboards/              # клавиатуры
 │   ├── agreement.py
 │   ├── menu.py
-│   └── review.py 
+│   ├── review.py
+│   └── suggest.py 
 ├── filters/                # кастомные фильтры
 │   ├── admin.py
 │   ├── reviewer.py 
@@ -147,12 +152,22 @@ python bot.py
 **users**
 
 ```json
-{ "telegram_id": 123, "username": "erzhena", "agreed": true, "agreed_at": "...", "created_at": "..." }
+{
+  "telegram_id": 123,
+  "username": "erzhena",
+  "agreed": true,
+  "agreed_at": "...",
+  "seen_hints": ["suggest", "voice"],
+  "complaints": 0,
+  "banned": false,
+  "banned_at": null,
+  "created_at": "..."
+}
 ```
 
 **reviewers** — модераторы, добавленные админом
 ```json
-{ "telegram_id": 98593712, "username": "bulka", "full_name": "Булка Тинькоф", "added_by": 794849050, "created_at": "..." }
+{ "telegram_id": 000000, "username": "bulka", "full_name": "Булка", "added_by": 27276331, "created_at": "..." }
 ```
 > `username` заполняется не при добавлении (в контакте Telegram его нет), а когда ревьюер сам напишет боту `/start`.
 
@@ -160,8 +175,20 @@ python bot.py
 **suggested_sentences** — предложенные фразы (`pending` / `approved` / `rejected`)
 
 ```json
-{ "text": "...", "author": 123, "status": "pending", "moderator": null, "created_at": "..." }
+{
+  "text": "...",
+  "author": 123,
+  "status": "pending",
+  "reviews": [
+    { "reviewer_id": 111, "decision": "approve", "created_at": "..." },
+    { "reviewer_id": 222, "decision": "complain", "created_at": "..." }
+  ],
+  "approved_at": null,
+  "created_at": "..."
+}
 ```
+
+> `decision` может быть `approve`, `reject` или `complain`.
 
 **voice_records** — записи голоса
 
