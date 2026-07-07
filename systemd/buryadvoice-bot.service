@@ -1,13 +1,13 @@
 [Unit]
 Description=Buryad Voice Telegram Bot
-After=network.target mongod.service
+After=network.target
 
 [Service]
 Type=simple
-User=bot
-WorkingDirectory=/opt/buryadvoice-bot
-EnvironmentFile=/opt/buryadvoice-bot/.env
-ExecStart=/opt/buryadvoice-bot/venv/bin/python bot.py
+User=root
+WorkingDirectory=/root/BuryadVoiceBot
+EnvironmentFile=/root/BuryadVoiceBot/.env
+ExecStart=/root/BuryadVoiceBot/venv/bin/python bot.py
 Restart=always
 RestartSec=5
 StandardOutput=append:/var/log/buryadvoice-bot.log
