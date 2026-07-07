@@ -31,5 +31,4 @@ async def cmd_voice(message: Message, state: FSMContext, mongo: Mongo) -> None:
 
 @router.message(StateFilter(VoiceState.WAIT_VOICE), F.voice)
 async def on_voice(message: Message, state: FSMContext, mongo: Mongo) -> None:
-    # TODO: сохранить voice_records, показать следующее предложение
     ...
