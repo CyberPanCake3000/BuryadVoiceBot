@@ -11,6 +11,7 @@
 - **Озвучка** — запись голоса для одобренных предложений
 - **Согласие с политикой** — обязательное принятие перед использованием (middleware)
 - **Хранение в MongoDB** — отдельные коллекции под каждую сущность
+- **Роли** — обычный пользователь, ревьюер и администратор с разными меню и командами
 
 ## Стек
 
@@ -20,6 +21,14 @@
 - [Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) — конфигурация
 - uvloop, systemd (для продакшена)
 
+## Роли
+| Роль | Кто это | Доступные команды |
+| --- | --- | --- |
+| Пользователь | любой, кто согласился с политикой | `/suggest`, `/voice` |
+| Ревьюер | добавлен админом через `/addreviewer` | `+ /startreview` |
+| Администратор | указан в `ADMIN_IDS` в `.env` | `+ /addreviewer` |
+Роль определяется автоматически: админ — по `ADMIN_IDS`, ревьюер — по наличию в коллекции `reviewers`. Меню и приветствие подстраиваются под роль.
+
 ## Команды бота
 
 | Команда | Описание |
@@ -28,6 +37,23 @@
 | `/suggest` | Предложить новое предложение (на модерацию) |
 | `/voice` | Озвучить одобренные предложения |
 | `/policy` | Прочитать условия использования данных |
+| `/startreview` | ревьюер | Получить 5 предложений на модерацию |
+| `/addreviewer` | админ | Добавить ревьюера (отправить контакт) |
+
+## Как работает модерация
+```
+Пользователь: /suggest → фраза сохраняется со статусом pending, reviews: []
+        ↓
+Ревьюер: /startreview → получает 5 случайных фраз, которые ещё не смотрел
+        ↓
+жмёт [✅ Принять] / [❌ Отклонить]
+        ↓
+голос пишется в reviews[] самой фразы (повторно проголосовать нельзя)
+        ↓
+когда approve набирает больше половины от всех ревьюеров → статус approved
+        ↓
+фраза автоматически попадает в /voice на озвучку
+```
 
 ## Структура проекта
 
@@ -43,16 +69,29 @@ BuryadVoiceBot/
 │   ├── suggest.py
 │   ├── voice.py
 │   ├── policy.py
+│   ├── reviewers.py
+│   ├── startreview.py
 │   └── unknown.py
 ├── middlewares/
 │   └── agreement.py        # проверка принятия политики
 ├── services/               # бизнес-логика
+│   └── roles.py 
 ├── database/
 │   ├── mongo.py            # подключение и индексы
 │   ├── models.py           # pydantic-модели
 │   └── repositories/       # доступ к коллекциям
+│       ├── users.py
+│       ├── reviewers.py
+│       ├── sentences.py
+│       └── voices.py
 ├── keyboards/              # клавиатуры
+│   ├── agreement.py
+│   ├── menu.py
+│   └── review.py 
 ├── filters/                # кастомные фильтры
+│   ├── admin.py
+│   ├── reviewer.py 
+│   └── agreed.py
 ├── utils/
 └── systemd/
     └── buryadvoice-bot.service
@@ -111,6 +150,13 @@ python bot.py
 { "telegram_id": 123, "username": "erzhena", "agreed": true, "agreed_at": "...", "created_at": "..." }
 ```
 
+**reviewers** — модераторы, добавленные админом
+```json
+{ "telegram_id": 98593712, "username": "bulka", "full_name": "Булка Тинькоф", "added_by": 794849050, "created_at": "..." }
+```
+> `username` заполняется не при добавлении (в контакте Telegram его нет), а когда ревьюер сам напишет боту `/start`.
+
+
 **suggested_sentences** — предложенные фразы (`pending` / `approved` / `rejected`)
 
 ```json
@@ -123,7 +169,13 @@ python bot.py
 { "sentence_id": "...", "telegram_id": 123, "telegram_file_id": "...", "duration": 8, "status": "pending" }
 ```
 
-Индексы: `users.telegram_id` (unique), `suggested_sentences.status`, `voice_records.sentence_id`, `voice_records.telegram_id`.
+Индексы:
+- `users.telegram_id` (unique)
+- `reviewers.telegram_id` (unique)
+- `suggested_sentences.status`
+- `suggested_sentences.reviews.reviewer_id`
+- `voice_records.sentence_id`
+- `voice_records.telegram_id`
 
 </details>
 
