@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import ReturnDocument
 
 
 class UsersRepository:
@@ -42,3 +43,23 @@ class UsersRepository:
             {"$addToSet": {"seen_hints": key}},
         )
         return result.modified_count == 1
+    
+    async def add_complaint(self, telegram_id: int) -> int:
+        doc = await self.col.find_one_and_update(
+            {"telegram_id": telegram_id},
+            {"$inc": {"complaints": 1}},
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        return doc.get("complaints", 0)
+
+    async def ban(self, telegram_id: int) -> None:
+        await self.col.update_one(
+            {"telegram_id": telegram_id},
+            {"$set": {"banned": True, "banned_at": datetime.utcnow()}},
+            upsert=True,
+        )
+
+    async def is_banned(self, telegram_id: int) -> bool:
+        doc = await self.col.find_one({"telegram_id": telegram_id}, {"banned": 1})
+        return bool(doc and doc.get("banned"))

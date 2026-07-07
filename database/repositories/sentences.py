@@ -81,3 +81,7 @@ class SentencesRepository:
                 {"$set": {"status": new_status, "approved_at": datetime.utcnow()}},
             )
         return new_status
+
+    async def get_author(self, doc_id) -> int | None:
+        doc = await self.col.find_one({"_id": doc_id}, {"author": 1})
+        return doc["author"] if doc else None

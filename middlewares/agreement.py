@@ -17,6 +17,12 @@ class AgreementMiddleware(BaseMiddleware):
         event: Message,
         data: dict[str, Any],
     ) -> Any:
+        mongo: Mongo = data["mongo"]
+        users = UsersRepository(mongo.db)
+        # забаненные — полный стоп, раньше всех проверок
+        if await users.is_banned(event.from_user.id):
+            return None
+
         text = (event.text or "").strip()
         if text in ALLOWED_WITHOUT_AGREEMENT:
             return await handler(event, data)
