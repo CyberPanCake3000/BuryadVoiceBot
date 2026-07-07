@@ -25,7 +25,6 @@
 | Команда | Описание |
 | --- | --- |
 | `/start` | Приветствие и согласие с политикой |
-| `/translate` | Перевести случайные предложения |
 | `/suggest` | Предложить новое предложение (на модерацию) |
 | `/voice` | Озвучить одобренные предложения |
 
@@ -40,7 +39,6 @@ BuryadVoiceBot/
 │
 ├── handlers/               # обработчики команд
 │   ├── start.py
-│   ├── translate.py
 │   ├── suggest.py
 │   ├── voice.py
 │   └── unknown.py
@@ -111,12 +109,6 @@ python bot.py
 { "telegram_id": 123, "username": "erzhena", "agreed": true, "agreed_at": "...", "created_at": "..." }
 ```
 
-**need_translation** — данные из Common Voice + переводы пользователей
-
-```json
-{ "text": "How are you?", "locale": "en", "translations": [ { "telegram_id": 111, "text": "Сайн байна", "created_at": "..." } ] }
-```
-
 **suggested_sentences** — предложенные фразы (`pending` / `approved` / `rejected`)
 
 ```json
@@ -129,7 +121,7 @@ python bot.py
 { "sentence_id": "...", "telegram_id": 123, "telegram_file_id": "...", "duration": 8, "status": "pending" }
 ```
 
-Индексы: `users.telegram_id` (unique), `need_translation.locale`, `suggested_sentences.status`, `voice_records.sentence_id`, `voice_records.telegram_id`.
+Индексы: `users.telegram_id` (unique), `suggested_sentences.status`, `voice_records.sentence_id`, `voice_records.telegram_id`.
 
 </details>
 

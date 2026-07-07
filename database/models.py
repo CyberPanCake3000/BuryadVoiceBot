@@ -19,12 +19,6 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class Translation(BaseModel):
-    telegram_id: int
-    text: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
 class SuggestedSentence(BaseModel):
     text: str
     author: int

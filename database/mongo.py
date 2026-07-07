@@ -14,7 +14,6 @@ class Mongo:
 
     async def ensure_indexes(self) -> None:
         await self.db.users.create_index("telegram_id", unique=True)
-        await self.db.need_translation.create_index("locale")
         await self.db.suggested_sentences.create_index("status")
         await self.db.voice_records.create_index("sentence_id")
         await self.db.voice_records.create_index("telegram_id")
