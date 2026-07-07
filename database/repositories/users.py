@@ -35,3 +35,10 @@ class UsersRepository:
             {"telegram_id": telegram_id}, {"agreed": 1}
         )
         return bool(user and user.get("agreed"))
+
+    async def mark_hint_seen(self, telegram_id: int, key: str) -> bool:
+        result = await self.col.update_one(
+            {"telegram_id": telegram_id, "seen_hints": {"$ne": key}},
+            {"$addToSet": {"seen_hints": key}},
+        )
+        return result.modified_count == 1

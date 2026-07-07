@@ -8,10 +8,20 @@ from bson import ObjectId
 from database.mongo import Mongo
 from database.repositories.sentences import SentencesRepository
 from database.repositories.voices import VoicesRepository
+from database.repositories.users import UsersRepository
 from keyboards.suggest import suggest_voice_kb
 
 router = Router(name="suggest")
 
+SUGGEST_HINT = (
+    "Здравствуйте! Вот правила по текстовым данным:\n\n"
+    "• Присылайте предложение на бурятском языке, например:\n"
+    "<i>Сайн байна!</i>\n"
+    "• Без личных данных, ссылок и оскорблений.\n\n"
+    "• Введенные предложения проходят модерацию, после чего их смогут озвучить другие участники.\n\n"
+    "• Ревьюер может пожаловаться на предложение, после получения 3 жалоб одним пользователем этот пользователь будет исключен из программы.\n\n"
+    "<i>Это памятка показывается только один раз.</i>"
+)
 
 class SuggestState(StatesGroup):
     WAIT_SENTENCE = State()
@@ -19,12 +29,16 @@ class SuggestState(StatesGroup):
     WAIT_VOICE = State()
 
 @router.message(Command("suggest"))
-async def cmd_suggest(message: Message, state: FSMContext) -> None:
+async def cmd_suggest(message: Message, state: FSMContext, mongo: Mongo) -> None:
+    users = UsersRepository(mongo.db)
+    if await users.mark_hint_seen(message.from_user.id, "suggest"):
+        await message.answer(SUGGEST_HINT)
+
     await state.set_state(SuggestState.WAIT_SENTENCE)
     await message.answer(
-        "Введите предложение на бурятском.\n"
-        "Оно попадёт на модерацию.\n"
-        "После одобрения это предложение смогут озвучить другие пользователи."
+        "Предложите <b>своё</b> предложение на бурятском языке.\n\n"
+        "Например: <i>Сайн байна!</i>\n\n"
+        "Оно попадёт на модерацию, а после одобрения его смогут озвучить другие участники.",
     )
 
 

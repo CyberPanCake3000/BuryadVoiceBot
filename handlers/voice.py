@@ -6,11 +6,19 @@ from aiogram.types import Message
 
 from database.mongo import Mongo
 from database.repositories.sentences import SentencesRepository
+from database.repositories.users import UsersRepository
 from bson import ObjectId
 from database.repositories.voices import VoicesRepository
 
 router = Router(name="voice")
 
+VOICE_HINT = (
+    "Здравствуйте! Вот правила записи голоса:\n\n"
+    "• Записывайте в тихом месте, без посторонних шумов.\n"
+    "• Говорите чётко и прочитайте предложение целиком.\n"
+    "• Одно голосовое сообщение — одно предложение.\n\n"
+    "<i>Эта памятка показывается только один раз.</i>"
+)
 
 class VoiceState(StatesGroup):
     WAIT_VOICE = State()
@@ -23,6 +31,10 @@ async def cmd_voice(message: Message, state: FSMContext, mongo: Mongo) -> None:
     if not docs:
         await message.answer("Пока нет одобренных предложений для озвучки.")
         return
+
+    users = UsersRepository(mongo.db)
+    if await users.mark_hint_seen(message.from_user.id, "voice"):
+        await message.answer(VOICE_HINT)
 
     await state.set_state(VoiceState.WAIT_VOICE)
     await state.update_data(
