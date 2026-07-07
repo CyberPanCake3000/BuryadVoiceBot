@@ -27,6 +27,7 @@
 | `/start` | Приветствие и согласие с политикой |
 | `/suggest` | Предложить новое предложение (на модерацию) |
 | `/voice` | Озвучить одобренные предложения |
+| `/policy` | Прочитать условия использования данных |
 
 ## Структура проекта
 
@@ -41,6 +42,7 @@ BuryadVoiceBot/
 │   ├── start.py
 │   ├── suggest.py
 │   ├── voice.py
+│   ├── policy.py
 │   └── unknown.py
 ├── middlewares/
 │   └── agreement.py        # проверка принятия политики
@@ -84,7 +86,7 @@ docker run -d --name buryad-mongo -p 27017:27017 mongo:7
 BOT_TOKEN=<токен от @BotFather>
 MONGO_URI=mongodb://localhost:27017
 MONGO_DB=commonvoice
-ADMIN_IDS=[794849050]
+ADMIN_IDS=[1234567]
 LOG_LEVEL=INFO
 ```
 
