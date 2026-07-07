@@ -8,7 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import settings
 from database.mongo import Mongo
-from handlers import start, suggest, voice, unknown
+from handlers import start, suggest, voice, unknown, policy
 from middlewares.agreement import AgreementMiddleware
 
 try:
@@ -38,6 +38,7 @@ async def main() -> None:
         start.router,
         suggest.router,
         voice.router,
+        policy.router,
         unknown.router,
     )
 
