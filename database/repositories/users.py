@@ -63,3 +63,6 @@ class UsersRepository:
     async def is_banned(self, telegram_id: int) -> bool:
         doc = await self.col.find_one({"telegram_id": telegram_id}, {"banned": 1})
         return bool(doc and doc.get("banned"))
+
+    async def get_by_username(self, username: str) -> dict | None:
+        return await self.col.find_one({"username": username})
