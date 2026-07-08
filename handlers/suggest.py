@@ -44,6 +44,14 @@ async def cmd_suggest(message: Message, state: FSMContext, mongo: Mongo) -> None
 
 @router.message(StateFilter(SuggestState.WAIT_SENTENCE))
 async def on_sentence(message: Message, state: FSMContext, mongo: Mongo) -> None:
+    text = (message.text or "").strip()
+    if not text or text.startswith("/"):
+        await message.answer(
+            "Похоже, это команда, а не предложение.\n"
+            "Пришлите текст предложения на бурятском языке."
+        )
+        return
+
     repo = SentencesRepository(mongo.db)
     sentence_id = await repo.add(text=message.text, author=message.from_user.id)
 
