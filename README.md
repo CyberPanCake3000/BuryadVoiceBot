@@ -15,6 +15,7 @@
 - **Коллективная модерация** — ревьюеры голосуют за предложения; фраза одобряется, когда за неё больше половины ревьюеров
 - **Жалобы и бан** — ревьюер может пожаловаться на фразу; после 3 жалоб её автор исключается из проекта и попадает в чёрный список
 - **Памятки-онбординг** — при первом использовании `/suggest` и `/voice` бот показывает правила (один раз)
+- **Рейтинг** — `/leaderboard` показывает топ-5 участников
 
 ## Стек
 
@@ -30,6 +31,7 @@
 | Пользователь | любой, кто согласился с политикой | `/suggest`, `/voice` |
 | Ревьюер | добавлен админом через `/addreviewer` | `+ /startreview` |
 | Администратор | указан в `ADMIN_IDS` в `.env` | `+ /addreviewer` |
+
 Роль определяется автоматически: админ — по `ADMIN_IDS`, ревьюер — по наличию в коллекции `reviewers`. Меню и приветствие подстраиваются под роль.
 
 ## Команды бота
@@ -42,6 +44,11 @@
 | `/policy` | Прочитать условия использования данных |
 | `/startreview` | ревьюер | Получить 5 предложений на модерацию |
 | `/addreviewer` | админ | Добавить ревьюера (отправить контакт) |
+| `/addfortranslation` | админ | Добавить тексты в очередь на перевод |
+| `/leaderboard` | все | Топ-5 участников по рейтингу (работает и в группах) |
+| `/translate` | ревьюер | Перевести тексты из очереди на перевод |
+
+> Все команды работают в личке с ботом. В групповых чатах доступен только `/leaderboard`.
 
 ## Как работает модерация
 ```
@@ -59,6 +66,20 @@
 фраза автоматически попадает в /voice на озвучку
 ```
 
+## Как работает перевод
+```
+Админ: /addfortranslation → присылает тексты (каждый с новой строки)
+        ↓
+тексты попадают в need_translation со статусом pending
+        ↓
+Ревьюер: /translate → получает пачку непереведённых текстов и вводит перевод
+        ↓
+перевод сохраняется, статус → translated
+```
+
+## Как считается рейтинг (`/leaderboard`)
+`рейтинг = предложения + озвучки − отклонённые предложения`. Топ-5 строится агрегацией по коллекциям `suggested_sentences` и `voice_records`, имя берётся из `users`.
+
 ## Структура проекта
 
 ```
@@ -75,6 +96,9 @@ BuryadVoiceBot/
 │   ├── policy.py
 │   ├── reviewers.py
 │   ├── startreview.py
+│   ├── addfortranslation.py
+│   ├── translate.py
+│   ├── leaderboard.py
 │   └── unknown.py
 ├── middlewares/
 │   └── agreement.py        # проверка принятия политики
@@ -87,7 +111,9 @@ BuryadVoiceBot/
 │       ├── users.py
 │       ├── reviewers.py
 │       ├── sentences.py
-│       └── voices.py
+│       ├── translations.py
+│       ├── voices.py
+│       └── stats.py
 ├── keyboards/              # клавиатуры
 │   ├── agreement.py
 │   ├── menu.py
@@ -190,6 +216,20 @@ python bot.py
 
 > `decision` может быть `approve`, `reject` или `complain`.
 
+
+**need_translation** — очередь текстов на перевод (`pending` / `translated`)
+```json
+{
+  "text": "...",
+  "translation": null,
+  "translated_by": null,
+  "status": "pending",
+  "added_by": 27276331,
+  "translated_at": null,
+  "created_at": "..."
+}
+```
+
 **voice_records** — записи голоса
 
 ```json
@@ -203,6 +243,7 @@ python bot.py
 - `suggested_sentences.reviews.reviewer_id`
 - `voice_records.sentence_id`
 - `voice_records.telegram_id`
+- `need_translation.status`
 
 </details>
 
@@ -214,12 +255,6 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now buryadvoice-bot
 sudo systemctl status buryadvoice-bot
 ```
-
-## Дорожная карта
-
-- [ ] Модерация переводов (совпадения от разных пользователей)
-- [ ] Админские команды (`/admin_stats`, `/approve`, `/reject`)
-- [ ] Статистика и лидерборд
 
 ## Лицензия
 
