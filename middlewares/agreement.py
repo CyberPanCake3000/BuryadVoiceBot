@@ -7,7 +7,7 @@ from aiogram.types import Message
 from database.mongo import Mongo
 from database.repositories.users import UsersRepository
 
-ALLOWED_WITHOUT_AGREEMENT = {"/start", "/help", "/policy", "/leaderboard"}
+ALLOWED_WITHOUT_AGREEMENT = {"/start", "/help", "/policy", "/leaderboard", "/stat"}
 
 
 class AgreementMiddleware(BaseMiddleware):

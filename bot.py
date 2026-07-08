@@ -47,7 +47,6 @@ async def main() -> None:
         reviewers.router, 
         addfortranslation.router,
         translate.router,
-        stat.router,
         unknown.router,
     )
     for r in private_routers:
