@@ -23,7 +23,7 @@ async def cmd_leaderboard(message: Message, mongo: Mongo) -> None:
         name = f"@{r['username']}" if r.get("username") else f"id{r['_id']}"
         lines.append(
             f"{MEDALS[i]} <b>{name}</b>\n"
-            f"    войсы: {r.get('voices', 0)}   "
+            f"войсы: {r.get('voices', 0)}   "
             f"предложения: {r.get('suggestions', 0)}   "
             f"рейтинг: {r.get('rating', 0)}"
         )
