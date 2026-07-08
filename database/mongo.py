@@ -17,6 +17,7 @@ class Mongo:
         await self.db.suggested_sentences.create_index("status")
         await self.db.voice_records.create_index("sentence_id")
         await self.db.voice_records.create_index("telegram_id")
+        await self.db.need_translation.create_index("status")
 
     async def close(self) -> None:
         if self.client:

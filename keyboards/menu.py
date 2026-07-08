@@ -6,7 +6,7 @@ def main_menu_kb(role: str = "user") -> ReplyKeyboardMarkup:
         [KeyboardButton(text="/suggest"), KeyboardButton(text="/voice")],
     ]
     if role == "reviewer":
-        rows.append([KeyboardButton(text="/startreview")])
+        rows.append([KeyboardButton(text="/startreview"), KeyboardButton(text="/translate")])
     if role == "admin":
-        rows.append([KeyboardButton(text="/addreviewer")])
+        rows.append([KeyboardButton(text="/addreviewer"), KeyboardButton(text="/addfortranslation")])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
