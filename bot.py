@@ -5,10 +5,13 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.enums import ChatType
+from aiogram import F
+
 
 from config import settings
 from database.mongo import Mongo
-from handlers import start, suggest, voice, unknown, policy, reviewers, startreview, addfortranslation, translate
+from handlers import start, suggest, voice, unknown, policy, reviewers, startreview, addfortranslation, translate, leaderboard
 from middlewares.agreement import AgreementMiddleware
 
 try:
@@ -34,6 +37,21 @@ async def main() -> None:
 
     dp.message.middleware(AgreementMiddleware())
 
+
+    private_routers = (
+        start.router, 
+        suggest.router, 
+        voice.router, 
+        policy.router,
+        startreview.router, 
+        reviewers.router, 
+        addfortranslation.router,
+        translate.router, 
+        unknown.router,
+    )
+    for r in private_routers:
+        r.message.filter(F.chat.type == ChatType.PRIVATE)
+
     dp.include_routers(
         start.router,
         suggest.router,
@@ -43,6 +61,7 @@ async def main() -> None:
         reviewers.router,
         addfortranslation.router,
         translate.router,
+        leaderboard.router,
         unknown.router,
     )
 

@@ -7,7 +7,7 @@ from aiogram.types import Message
 from database.mongo import Mongo
 from database.repositories.users import UsersRepository
 
-ALLOWED_WITHOUT_AGREEMENT = {"/start", "/help", "/policy"}
+ALLOWED_WITHOUT_AGREEMENT = {"/start", "/help", "/policy", "/leaderboard"}
 
 
 class AgreementMiddleware(BaseMiddleware):
@@ -22,6 +22,9 @@ class AgreementMiddleware(BaseMiddleware):
         # забаненные — полный стоп, раньше всех проверок
         if await users.is_banned(event.from_user.id):
             return None
+
+        if event.chat.type in ("group", "supergroup"):
+            return await handler(event, data)
 
         text = (event.text or "").strip()
         if text in ALLOWED_WITHOUT_AGREEMENT:
