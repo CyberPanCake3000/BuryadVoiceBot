@@ -11,7 +11,7 @@ from aiogram import F
 
 from config import settings
 from database.mongo import Mongo
-from handlers import start, suggest, voice, unknown, policy, reviewers, startreview, addfortranslation, translate, leaderboard, stat
+from handlers import cancel, start, suggest, voice, unknown, policy, reviewers, startreview, addfortranslation, translate, leaderboard, stat
 from middlewares.agreement import AgreementMiddleware
 
 try:
@@ -39,6 +39,7 @@ async def main() -> None:
 
 
     private_routers = (
+        cancel.router,
         start.router, 
         suggest.router, 
         voice.router, 
@@ -53,6 +54,7 @@ async def main() -> None:
         r.message.filter(F.chat.type == ChatType.PRIVATE)
 
     dp.include_routers(
+        cancel.router,
         start.router,
         suggest.router,
         voice.router,
