@@ -85,3 +85,25 @@ class SentencesRepository:
     async def get_author(self, doc_id) -> int | None:
         doc = await self.col.find_one({"_id": doc_id}, {"author": 1})
         return doc["author"] if doc else None
+
+    async def update_text(self, doc_id, new_text: str) -> bool:
+        result = await self.col.update_one(
+            {"_id": doc_id},
+            {"$set": {"text": new_text}},
+        )
+        return result.modified_count == 1
+
+    async def add_edit_review(self, doc_id, reviewer_id: int, edited_text: str) -> bool:
+        result = await self.col.update_one(
+            {"_id": doc_id, "reviews.reviewer_id": {"$ne": reviewer_id}},
+            {
+                "$set": {"text": edited_text},
+                "$push": {"reviews": {
+                    "reviewer_id": reviewer_id,
+                    "decision": "edit",
+                    "edited_text": edited_text,
+                    "created_at": datetime.utcnow(),
+                }},
+            },
+        )
+        return result.modified_count == 1
