@@ -23,16 +23,33 @@ class StatsRepository:
                     {"$group": {"_id": "$telegram_id", "voices": {"$sum": 1}}},
                 ],
             }},
+            {"$unionWith": {
+                "coll": "suggested_sentences",
+                "pipeline": [
+                    {"$unwind": "$reviews"},
+                    {"$group": {
+                        "_id": "$reviews.reviewer_id",
+                        "reviews": {"$sum": 1},
+                    }},
+                ],
+            }},
             {"$group": {
                 "_id": "$_id",
                 "suggestions": {"$sum": "$suggestions"},
                 "rejected": {"$sum": "$rejected"},
                 "voices": {"$sum": "$voices"},
+                "reviews": {"$sum": "$reviews"},
             }},
             {"$addFields": {
-                "rating": {"$subtract": [
-                    {"$add": ["$suggestions", "$voices"]}, "$rejected"
-                ]},
+                "rating": {
+                    "$add": [
+                        {"$subtract": [
+                            {"$add": ["$suggestions", "$voices"]},
+                            "$rejected",
+                        ]},
+                        "$reviews",
+                    ]
+                },
             }},
             {"$sort": {"rating": -1, "_id": 1}},
             {"$limit": limit},
@@ -63,3 +80,47 @@ class StatsRepository:
             ),
             "total_voices": await voices.count_documents({}),
         }
+
+    async def reviewer_stats(self) -> list[dict]:
+        pipeline = [
+            {"$unwind": "$reviews"},
+            {"$group": {
+                "_id": "$reviews.reviewer_id",
+                "total": {"$sum": 1},
+                "approved": {"$sum": {
+                    "$cond": [{"$eq": ["$reviews.decision", "approve"]}, 1, 0]
+                }},
+                "rejected": {"$sum": {
+                    "$cond": [{"$eq": ["$reviews.decision", "reject"]}, 1, 0]
+                }},
+                "edited": {"$sum": {
+                    "$cond": [{"$eq": ["$reviews.decision", "edit"]}, 1, 0]
+                }},
+                "complained": {"$sum": {
+                    "$cond": [{"$eq": ["$reviews.decision", "complain"]}, 1, 0]
+                }},
+            }},
+            {"$sort": {"total": -1}},
+            {"$lookup": {
+                "from": "reviewers",
+                "localField": "_id",
+                "foreignField": "telegram_id",
+                "as": "reviewer",
+            }},
+            {"$lookup": {
+                "from": "users",
+                "localField": "_id",
+                "foreignField": "telegram_id",
+                "as": "user",
+            }},
+            {"$addFields": {
+                "username": {
+                    "$ifNull": [
+                        {"$first": "$user.username"},
+                        {"$first": "$reviewer.full_name"},
+                    ]
+                },
+            }},
+            {"$project": {"reviewer": 0, "user": 0}},
+        ]
+        return [doc async for doc in self.db.suggested_sentences.aggregate(pipeline)]
