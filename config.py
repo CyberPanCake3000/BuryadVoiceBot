@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     mongo_db: str = "commonvoice"
     admin_ids: list[int] = []
     log_level: str = "INFO"
+    approval_threshold: int = 3
 
 
 settings = Settings()

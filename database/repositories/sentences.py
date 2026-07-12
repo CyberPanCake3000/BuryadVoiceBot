@@ -3,6 +3,7 @@ from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from database.models import SentenceStatus
+from config import settings
 
 
 class SentencesRepository:
@@ -61,26 +62,40 @@ class SentencesRepository:
         )
         return result.modified_count == 1
 
-    async def recalc_status(self, doc_id, total_reviewers: int) -> str | None:
-        doc = await self.col.find_one({"_id": doc_id}, {"reviews": 1})
+    from config import settings
+
+    async def recalc_status(self, doc_id) -> str | None:
+        doc = await self.col.find_one({"_id": doc_id}, {"reviews": 1, "status": 1})
         if doc is None:
             return None
+
         reviews = doc.get("reviews", [])
         approvals = sum(1 for r in reviews if r["decision"] == "approve")
         rejections = sum(1 for r in reviews if r["decision"] == "reject")
+        threshold = settings.approval_threshold
 
         new_status = None
-        if approvals * 2 > total_reviewers:
+        if approvals >= threshold and approvals > rejections:
             new_status = SentenceStatus.APPROVED
-        elif rejections * 2 > total_reviewers:
+        elif rejections >= threshold and rejections > approvals:
             new_status = SentenceStatus.REJECTED
 
-        if new_status:
+        old_status = doc.get("status")
+        if new_status and new_status != old_status:
+            update = {"status": new_status}
+            if new_status in (SentenceStatus.APPROVED, SentenceStatus.REJECTED):
+                update["approved_at"] = datetime.utcnow()
+            await self.col.update_one({"_id": doc_id}, {"$set": update})
+            return new_status
+
+        if old_status != SentenceStatus.PENDING and new_status is None:
             await self.col.update_one(
                 {"_id": doc_id},
-                {"$set": {"status": new_status, "approved_at": datetime.utcnow()}},
+                {"$set": {"status": SentenceStatus.PENDING}, "$unset": {"approved_at": ""}},
             )
-        return new_status
+            return SentenceStatus.PENDING
+
+        return None
 
     async def get_author(self, doc_id) -> int | None:
         doc = await self.col.find_one({"_id": doc_id}, {"author": 1})

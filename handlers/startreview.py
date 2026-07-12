@@ -67,8 +67,7 @@ async def on_review(callback: CallbackQuery, state: FSMContext, mongo: Mongo) ->
                     pass 
         await callback.answer("Жалоба отправлена")
     elif added and decision in ("approve", "reject"):
-        total = await reviewers.count()
-        await sentences.recalc_status(ObjectId(sid), total)
+        await sentences.recalc_status(ObjectId(sid))
         await callback.answer("Учтено!")
     else:
         await callback.answer("Уже учтено")
