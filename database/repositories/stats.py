@@ -33,12 +33,24 @@ class StatsRepository:
                     }},
                 ],
             }},
+            {"$unionWith": {
+                "coll": "need_translation",
+                "pipeline": [
+                    {"$unwind": "$reviews"},
+                    {"$match": {"reviews.decision": {"$in": ["approve", "edit"]}}},
+                    {"$group": {
+                        "_id": "$reviews.reviewer_id",
+                        "translation_reviews": {"$sum": 1},
+                    }},
+                ],
+            }},
             {"$group": {
                 "_id": "$_id",
                 "suggestions": {"$sum": "$suggestions"},
                 "rejected": {"$sum": "$rejected"},
                 "voices": {"$sum": "$voices"},
                 "reviews": {"$sum": "$reviews"},
+                "translation_reviews": {"$sum": "$translation_reviews"},
             }},
             {"$addFields": {
                 "rating": {
@@ -48,6 +60,7 @@ class StatsRepository:
                             "$rejected",
                         ]},
                         "$reviews",
+                        "$translation_reviews",
                     ]
                 },
             }},
@@ -124,3 +137,44 @@ class StatsRepository:
             {"$project": {"reviewer": 0, "user": 0}},
         ]
         return [doc async for doc in self.db.suggested_sentences.aggregate(pipeline)]
+
+    async def translation_reviewer_stats(self) -> list[dict]:
+        pipeline = [
+            {"$unwind": "$reviews"},
+            {"$group": {
+                "_id": "$reviews.reviewer_id",
+                "total": {"$sum": 1},
+                "approved": {"$sum": {
+                    "$cond": [{"$eq": ["$reviews.decision", "approve"]}, 1, 0]
+                }},
+                "edited": {"$sum": {
+                    "$cond": [{"$eq": ["$reviews.decision", "edit"]}, 1, 0]
+                }},
+                "skipped": {"$sum": {
+                    "$cond": [{"$eq": ["$reviews.decision", "skip"]}, 1, 0]
+                }},
+            }},
+            {"$sort": {"total": -1}},
+            {"$lookup": {
+                "from": "reviewers",
+                "localField": "_id",
+                "foreignField": "telegram_id",
+                "as": "reviewer",
+            }},
+            {"$lookup": {
+                "from": "users",
+                "localField": "_id",
+                "foreignField": "telegram_id",
+                "as": "user",
+            }},
+            {"$addFields": {
+                "username": {
+                    "$ifNull": [
+                        {"$first": "$user.username"},
+                        {"$first": "$reviewer.full_name"},
+                    ]
+                },
+            }},
+            {"$project": {"reviewer": 0, "user": 0}},
+        ]
+        return [doc async for doc in self.db.need_translation.aggregate(pipeline)]

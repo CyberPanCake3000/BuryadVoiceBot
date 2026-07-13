@@ -26,6 +26,7 @@ async def cmd_leaderboard(message: Message, mongo: Mongo) -> None:
             f"войсы: {r.get('voices', 0)}\n"
             f"предложения: {r.get('suggestions', 0)}\n"
             f"ревью: {r.get('reviews', 0)}\n"
+            f"проверенные переводы: {r.get('translation_reviews', 0)}\n"
             f"рейтинг: {r.get('rating', 0)}\n\n"
         )
     await message.answer("\n".join(lines))
