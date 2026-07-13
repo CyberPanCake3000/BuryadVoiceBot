@@ -34,7 +34,6 @@ ADMIN_WELCOME = (
     "/leaderboard — посмотреть топ-5 участников\n"
     "/stat — посмотреть статистику\n"
     "/cancel — отменить текущее действие\n"
-    "/addfortranslation — добавить текста из UI сайта для перевода"
 )
 
 REVIEWER_WELCOME = (
@@ -44,7 +43,7 @@ REVIEWER_WELCOME = (
     "/suggest — предложить своё\n"
     "/voice — озвучить предложения\n"
     "/leaderboard — посмотреть топ-5 участников\n"
-    "/translate — перевести текста из UI сайта\n"
+    "/checktranslation — проверить машинные переводы\n"
     "/stat — посмотреть статистику\n"
     "/cancel — отменить текущее действие\n\n"
 )

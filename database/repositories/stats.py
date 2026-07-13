@@ -76,7 +76,7 @@ class StatsRepository:
                 {"status": SentenceStatus.APPROVED}
             ),
             "translated": await translations.count_documents(
-                {"status": "translated"}
+                {"status": "approved"}
             ),
             "total_voices": await voices.count_documents({}),
         }

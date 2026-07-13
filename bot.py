@@ -11,7 +11,7 @@ from aiogram import F
 
 from config import settings
 from database.mongo import Mongo
-from handlers import cancel, start, suggest, voice, unknown, policy, reviewers, startreview, addfortranslation, translate, leaderboard, stat, reviewstat
+from handlers import cancel, start, suggest, voice, unknown, policy, reviewers, startreview, checktranslation, leaderboard, stat, reviewstat
 from middlewares.agreement import AgreementMiddleware
 
 try:
@@ -45,9 +45,8 @@ async def main() -> None:
         voice.router, 
         policy.router,
         startreview.router, 
-        reviewers.router, 
-        addfortranslation.router,
-        translate.router,
+        reviewers.router,
+        checktranslation.router,
         reviewstat.router,
         unknown.router,
     )
@@ -62,8 +61,7 @@ async def main() -> None:
         policy.router,
         startreview.router,
         reviewers.router,
-        addfortranslation.router,
-        translate.router,
+        checktranslation.router,
         leaderboard.router,
         stat.router,
         reviewstat.router,
