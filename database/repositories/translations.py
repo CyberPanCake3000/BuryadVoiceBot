@@ -55,3 +55,22 @@ class NeedTranslationRepository:
             "reviewed_by": reviewer_id,
             "reviewed_at": datetime.utcnow(),
         })
+
+    async def random_approved(self, limit: int = 3) -> list[dict]:
+        cursor = self.col.aggregate([
+            {"$match": {"status": "approved"}},
+            {"$sample": {"size": limit}},
+        ])
+        return [doc async for doc in cursor]
+
+    async def mark_recorded(self, doc_id, admin_id: int) -> bool:
+        result = await self.col.update_one(
+            {"_id": doc_id, "status": "approved"},
+            {"$set": {
+                "status": "recorded",
+                "recorded_by": admin_id,
+                "recorded_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+            }},
+        )
+        return result.modified_count == 1

@@ -19,6 +19,7 @@ async def cmd_stat(message: Message, mongo: Mongo) -> None:
         f"✍️ Предложений добавлено: <b>{s['total_suggestions']}</b>\n"
         f"✅ Из них одобрено: <b>{s['approved']}</b>\n"
         f"🌐 Переводов проверено: <b>{s['translated']}</b>\n"
+        f"📥 Заполнено в Pontoon: <b>{s['recorded']}</b>\n"
         f"🎙 Голосовых записей: <b>{s['total_voices']}</b>\n\n"
         "Спасибо, что помогаете сохранить бурятский язык! 🙏"
     )

@@ -12,6 +12,11 @@ router = Router(name="cancel")
 async def cmd_cancel(message: Message, state: FSMContext, mongo: Mongo) -> None:
     current = await state.get_state()
 
+    if current == "FillTranslationState:ACTIVE":
+        await state.clear()
+        await message.answer("Заполнение переводов отменено 👌")
+        return
+        
     if current == "CheckTranslationState:WAIT_EDIT":
         await state.set_state("CheckTranslationState:ACTIVE")
         await message.answer("Редактирование отменено.")

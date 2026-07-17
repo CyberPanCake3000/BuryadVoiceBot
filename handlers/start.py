@@ -34,6 +34,7 @@ ADMIN_WELCOME = (
     "/leaderboard — посмотреть топ-5 участников\n"
     "/stat — посмотреть статистику\n"
     "/cancel — отменить текущее действие\n"
+    "/filltranslation — заполнить одобренные переводы в Pontoon\n"
 )
 
 REVIEWER_WELCOME = (

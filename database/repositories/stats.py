@@ -91,6 +91,7 @@ class StatsRepository:
             "translated": await translations.count_documents(
                 {"status": "approved"}
             ),
+            "recorded": await translations.count_documents({"status": "recorded"}),
             "total_voices": await voices.count_documents({}),
         }
 
