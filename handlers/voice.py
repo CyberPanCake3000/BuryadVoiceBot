@@ -25,11 +25,12 @@ class VoiceState(StatesGroup):
 
 
 @router.message(Command("voice"))
+@router.message(F.text == "Озвучить")
 async def cmd_voice(message: Message, state: FSMContext, mongo: Mongo) -> None:
     repo = SentencesRepository(mongo.db)
     docs = await repo.random_approved(limit=5)
     if not docs:
-        await message.answer("Пока нет одобренных предложений для озвучки.")
+        await message.answer("Пока нет готовых фраз для озвучки. Загляните позже.")
         return
 
     users = UsersRepository(mongo.db)
@@ -42,7 +43,7 @@ async def cmd_voice(message: Message, state: FSMContext, mongo: Mongo) -> None:
         index=0,
     )
     await message.answer(
-        f"Озвучьте следующее предложение:\n\n<b>{docs[0]['text']}</b>\n\nПришлите голосовое сообщение."
+        f"Прочитайте вслух:\n\n<b>{docs[0]['text']}</b>\n\nПришлите голосовое сообщение."
     )
 
 
@@ -74,7 +75,7 @@ async def on_voice(message: Message, state: FSMContext, mongo: Mongo) -> None:
         )
     else:
         await state.clear()
-        await message.answer("Готово! Вы озвучили все предложения. Спасибо! 🎉")
+        await message.answer("Готово! Вы озвучили все предложения. Баярлалаа!")
 
 
 @router.message(StateFilter(VoiceState.WAIT_VOICE))

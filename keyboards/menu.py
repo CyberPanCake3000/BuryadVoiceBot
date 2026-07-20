@@ -3,8 +3,12 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 def main_menu_kb(role: str = "user") -> ReplyKeyboardMarkup:
     rows = [
-        [KeyboardButton(text="/suggest"), KeyboardButton(text="/voice")],
+        [KeyboardButton(text="Предложить фразу"), KeyboardButton(text="Озвучить")],
     ]
+    rows.append([
+        KeyboardButton(text="Лучшие участники"),
+        KeyboardButton(text="Наши итоги"),
+    ])
     if role == "reviewer":
         rows.append([KeyboardButton(text="/startreview"), KeyboardButton(text="/checktranslation")])
     if role == "admin":
@@ -13,5 +17,5 @@ def main_menu_kb(role: str = "user") -> ReplyKeyboardMarkup:
             KeyboardButton(text="/filltranslation"),
         ])
         rows.append([KeyboardButton(text="/reviewstat")])
-    rows.append([KeyboardButton(text="/cancel")])
+    rows.append([KeyboardButton(text="Отменить")])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)

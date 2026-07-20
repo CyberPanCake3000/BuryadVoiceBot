@@ -14,14 +14,19 @@ from keyboards.suggest import suggest_voice_kb
 router = Router(name="suggest")
 
 SUGGEST_HINT = (
-    "Здравствуйте! Вот правила по текстовым данным:\n\n"
-    "• Присылайте предложение на бурятском языке, например:\n"
+    "Сайнуу! Краткие правила:\n\n"
+    "• Присылайте своё предложение на бурятском, например:\n"
     "<i>Сайн байна!</i>\n"
-    "• Без личных данных, ссылок и оскорблений.\n\n"
-    "• Введенные предложения проходят модерацию, после чего их смогут озвучить другие участники.\n\n"
-    "• Ревьюер может пожаловаться на предложение, после получения 3 жалоб одним пользователем этот пользователь будет исключен из программы.\n\n"
-    "<i>Эта памятка показывается только один раз.</i>"
+    "• Без имён, адресов, ссылок и обидных слов.\n"
+    "• Фраза сначала проходит проверку, потом её смогут озвучить другие.\n"
+    "• Если на человека пожалуются три раза — он больше не сможет участвовать.\n\n"
+    "<i>Это сообщение показывается только один раз.</i>"
 )
+
+MENU_TEXTS = {
+    "Предложить фразу", "Озвучить", "Отменить",
+    "Лучшие участники", "Наши итоги",
+}
 
 class SuggestState(StatesGroup):
     WAIT_SENTENCE = State()
@@ -29,6 +34,7 @@ class SuggestState(StatesGroup):
     WAIT_VOICE = State()
 
 @router.message(Command("suggest"))
+@router.message(F.text == "Предложить фразу")
 async def cmd_suggest(message: Message, state: FSMContext, mongo: Mongo) -> None:
     users = UsersRepository(mongo.db)
     if await users.mark_hint_seen(message.from_user.id, "suggest"):
@@ -36,19 +42,19 @@ async def cmd_suggest(message: Message, state: FSMContext, mongo: Mongo) -> None
 
     await state.set_state(SuggestState.WAIT_SENTENCE)
     await message.answer(
-        "Предложите <b>своё</b> предложение на бурятском языке.\n\n"
+        "Напишите <b>свое</b> предложение на бурятском.\n\n"
         "Например: <i>Сайн байна!</i>\n\n"
-        "Оно попадёт на модерацию, а после одобрения его смогут озвучить другие участники.",
+        "Сначала предложение проверят, а потом другие смогут прочитать его вслух.",
     )
 
 
 @router.message(StateFilter(SuggestState.WAIT_SENTENCE))
 async def on_sentence(message: Message, state: FSMContext, mongo: Mongo) -> None:
     text = (message.text or "").strip()
-    if not text or text.startswith("/"):
+    if not text or text.startswith("/") or text in MENU_TEXTS:
         await message.answer(
             "Похоже, это команда, а не предложение.\n"
-            "Пришлите текст предложения на бурятском языке."
+            "Напишите, пожалуйста, предложение на бурятском."
         )
         return
 
@@ -59,7 +65,7 @@ async def on_sentence(message: Message, state: FSMContext, mongo: Mongo) -> None
     await state.set_state(SuggestState.WAIT_DECISION)
 
     await message.answer(
-        "Спасибо! Предложение отправлено на модерацию.\n\n"
+        "Баярлалаа! Предложение отправлено на проверку.\n\n"
         "Желаете озвучить своё предложение?",
         reply_markup=suggest_voice_kb(),
     )
@@ -98,7 +104,7 @@ async def on_suggest_voice(message: Message, state: FSMContext, mongo: Mongo) ->
         duration=voice.duration,
     )
     await state.clear()
-    await message.answer("Спасибо! Каждый голос важен 🙏")
+    await message.answer("Баярлалаа! Каждый голос важен.")
 
 
 @router.message(StateFilter(SuggestState.WAIT_VOICE))

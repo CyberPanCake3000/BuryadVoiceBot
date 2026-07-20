@@ -7,5 +7,7 @@ router = Router(name="unknown")
 @router.message()
 async def unknown_message(message: Message) -> None:
     await message.answer(
-        "Не понял команду. Доступно: /suggest, /voice, /help"
+        "Не поняла эту команду.\n"
+        "Воспользуйтесь кнопками внизу экрана "
+        "или напишите /start"
     )

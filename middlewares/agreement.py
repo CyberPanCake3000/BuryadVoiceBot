@@ -7,7 +7,10 @@ from aiogram.types import Message
 from database.mongo import Mongo
 from database.repositories.users import UsersRepository
 
-ALLOWED_WITHOUT_AGREEMENT = {"/start", "/help", "/policy", "/leaderboard", "/stat"}
+ALLOWED_WITHOUT_AGREEMENT = {
+    "/start", "/help", "/policy", "/leaderboard", "/stat",
+    "Лучшие участники", "Наши итоги",
+}
 
 
 class AgreementMiddleware(BaseMiddleware):
@@ -35,5 +38,5 @@ class AgreementMiddleware(BaseMiddleware):
         if await users.is_agreed(event.from_user.id):
             return await handler(event, data)
 
-        await event.answer("Сначала примите политику обработки данных — /start")
+        await event.answer("Сначала согласитесь с правилами — нажмите /start")
         return None
