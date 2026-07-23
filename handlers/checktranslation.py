@@ -46,7 +46,7 @@ def _format_item(item: dict) -> str:
     return (
         f"{markup_warn}"
         f"<b>Оригинал:</b>\n{escape(item['source_text'])}\n\n"
-        f"<b>Перевод:</b>\n{escape(item['translation'])}"
+        f"<b>Перевод:</b>\n <code>{escape(item['translation'])}</code>"
     )
 
 
