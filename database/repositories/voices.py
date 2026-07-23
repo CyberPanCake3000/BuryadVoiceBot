@@ -19,6 +19,7 @@ class VoicesRepository:
     ) -> None:
         await self.col.insert_one({
             "sentence_id": sentence_id,
+            "source": "telegram",
             "telegram_id": telegram_id,
             "telegram_file_id": file_id,
             "telegram_unique_id": unique_id,

@@ -13,6 +13,7 @@ class SentencesRepository:
     async def add(self, text: str, author: int) -> None:
         result = await self.col.insert_one({
             "text": text,
+            "source": "telegram",
             "author": author,
             "status": SentenceStatus.PENDING,
             "moderator": None,

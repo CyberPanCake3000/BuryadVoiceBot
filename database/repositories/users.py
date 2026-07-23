@@ -17,6 +17,7 @@ class UsersRepository:
             {
                 "$setOnInsert": {
                     "telegram_id": telegram_id,
+                    "source": "telegram",
                     "agreed": False,
                     "created_at": datetime.utcnow(),
                 },
@@ -44,19 +45,31 @@ class UsersRepository:
         )
         return result.modified_count == 1
     
-    async def add_complaint(self, telegram_id: int) -> int:
+    async def add_complaint(self, user_id: int, source: str = "telegram") -> int:
+        id_field = "vk_id" if source == "vk" else "telegram_id"
         doc = await self.col.find_one_and_update(
-            {"telegram_id": telegram_id},
-            {"$inc": {"complaints": 1}},
+            {id_field: user_id},
+            {
+                "$inc": {"complaints": 1},
+                "$setOnInsert": {
+                    id_field: user_id,
+                    "source": source,
+                    "created_at": datetime.utcnow(),
+                },
+            },
             upsert=True,
             return_document=ReturnDocument.AFTER,
         )
         return doc.get("complaints", 0)
 
-    async def ban(self, telegram_id: int) -> None:
+    async def ban(self, user_id: int, source: str = "telegram") -> None:
+        id_field = "vk_id" if source == "vk" else "telegram_id"
         await self.col.update_one(
-            {"telegram_id": telegram_id},
-            {"$set": {"banned": True, "banned_at": datetime.utcnow()}},
+            {id_field: user_id},
+            {
+                "$set": {"banned": True, "banned_at": datetime.utcnow(), "source": source},
+                "$setOnInsert": {id_field: user_id, "created_at": datetime.utcnow()},
+            },
             upsert=True,
         )
 

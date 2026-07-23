@@ -52,19 +52,25 @@ async def on_review(callback: CallbackQuery, state: FSMContext, mongo: Mongo) ->
 
     added = await sentences.add_review(ObjectId(sid), callback.from_user.id, decision)
     if added and decision == "complain":
-        author_id = await sentences.get_author(ObjectId(sid))
-        if author_id is not None:
-            count = await users.add_complaint(author_id)
+        doc = await mongo.db.suggested_sentences.find_one(
+            {"_id": ObjectId(sid)}, {"author": 1, "source": 1}
+        )
+        if doc and doc.get("author") is not None:
+            source = doc.get("source", "telegram")
+            author_id = doc["author"]
+            count = await users.add_complaint(author_id, source=source)
             if count >= COMPLAINTS_LIMIT:
-                await users.ban(author_id)
-                try:
-                    await callback.bot.send_message(
-                        author_id,
-                        "Вы получили 3 жалобы и исключены из проекта. "
-                        "Доступ к боту закрыт.",
-                    )
-                except Exception:
-                    pass 
+                await users.ban(author_id, source=source)
+                # уведомить можно только ТГ-авторов
+                if source != "vk":
+                    try:
+                        await callback.bot.send_message(
+                            author_id,
+                            "Вы получили 3 жалобы и исключены из проекта. "
+                            "Доступ к боту закрыт.",
+                        )
+                    except Exception:
+                        pass
         await callback.answer("Жалоба отправлена")
     elif added and decision in ("approve", "reject"):
         await sentences.recalc_status(ObjectId(sid))
@@ -80,7 +86,9 @@ async def send_next_sentence(message: Message, reviewer_id: int, mongo: Mongo) -
         await message.answer("Новых предложений на модерацию нет 🎉")
         return False
     d = docs[0]
-    await message.answer(d["text"], reply_markup=review_kb(str(d["_id"])))
+    source = d.get("source", "telegram")
+    prefix = "📱 VK\n\n" if source == "vk" else ""
+    await message.answer(f"{prefix}{d['text']}", reply_markup=review_kb(str(d["_id"])))
     return True
 
 
