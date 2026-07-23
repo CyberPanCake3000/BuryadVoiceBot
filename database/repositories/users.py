@@ -79,3 +79,9 @@ class UsersRepository:
 
     async def get_by_username(self, username: str) -> dict | None:
         return await self.col.find_one({"username": username})
+
+    async def increment_sentence_count(self, telegram_id: int) -> None:
+        await self.col.update_one(
+            {"telegram_id": telegram_id},
+            {"$inc": {"sentence_count": 1}},
+        )

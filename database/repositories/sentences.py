@@ -4,10 +4,12 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from database.models import SentenceStatus
 from config import settings
+from database.repositories.users import UsersRepository
 
 
 class SentencesRepository:
     def __init__(self, db: AsyncIOMotorDatabase) -> None:
+        self._db = db
         self.col = db.suggested_sentences
 
     async def add(self, text: str, author: int) -> None:
@@ -21,6 +23,7 @@ class SentencesRepository:
             "approved_at": None,
             "created_at": datetime.utcnow(),
         })
+        await UsersRepository(self._db).increment_sentence_count(author)
         return result.inserted_id
 
     async def random_approved(self, limit: int = 5) -> list[dict]:
